@@ -13,7 +13,7 @@ class MrpProduction(models.Model):
     @api.depends('source_weight_lbs', 'end_weight_lbs')
     def _compute_yields(self):
         for s in self:
-            if float_compare(s.source_weight_lbs, 0.0) > 0:
+            if float_compare(s.source_weight_lbs, 0.0, precision_rounding=2) > 0:
                 s.yields = s.end_weight_lbs / s.source_weight_lbs
             else:
                 s.yields = 0.0
