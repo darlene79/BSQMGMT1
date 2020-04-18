@@ -22,11 +22,13 @@ class MrpProduction(models.Model):
     @api.depends('finished_move_line_ids')
     def _compute_end_weight_lbs(self):
         for s in self:
+            s.end_weight_lbs = 0.0
             for f in s.finished_move_line_ids.filtered(lambda x: x.lot_id):
                 s.end_weight_lbs += f.qty_done
 
     @api.depends('move_raw_ids')
     def _compute_source_weight_lbs(self):
         for s in self:
+            s.source_weight_lbs = 0.0
             for f in s.move_raw_ids:
                 s.source_weight_lbs += f.quantity_done
