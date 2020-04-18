@@ -1,0 +1,16 @@
+<odoo>
+  <data>
+    <record model="ir.ui.view" id="bsqmgmt1_mrp_production_form_inherit_view">
+      <field name="name">mrp.production.form.inherit</field>
+      <field name="model">mrp.production</field>
+      <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='origin']" position="after">
+          <field name="source_weight_lbs"/>
+          <field name="end_weight_lbs"/>
+          <field name="yields"/>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>
