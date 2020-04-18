@@ -6,6 +6,7 @@
     'author': 'Odoo Inc',
     'maintainer': 'Odoo Inc',
     'category': 'Manufacturing',
+    'summary': "My client wants his manufacturing employees to be able to input the weight of the Produced Finished Product (FP) and also of the Components on their Tablet view. This way we can automate the data filling of the manufacturing order, minimizing communication errors between managers and manufacturers.",
     'description': """
 Dynamic Finished Product Quantity
 =================
