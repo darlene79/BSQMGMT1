@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo import api, fields, models
+from odoo.tools import float_compare, float_round
 
 class MrpProduction(models.Model):
     _inherit = 'mrp.production'
@@ -12,7 +13,10 @@ class MrpProduction(models.Model):
     @api.depends('source_weight_lbs', 'end_weight_lbs')
     def _compute_yields(self):
         for s in self:
-            s.yields = s.end_weight_lbs / s.source_weight_lbs
+            if float_compare(s.source_weight_lbs, 0.0) > 0:
+                s.yields = s.end_weight_lbs / s.source_weight_lbs
+            else:
+                s.yields = 0.0
     
 
     @api.depends('finished_move_line_ids')
