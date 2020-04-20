@@ -39,10 +39,9 @@ class MrpProductionWorkcenterLine(models.Model):
 
             if continue_production:
                 self._create_subsequent_checks()
-            elif float_compare(self.component_remaining_qty, 0, precision_rounding=rounding) < 0 and\
-                    self.consumption == 'strict':
+            # elif float_compare(self.component_remaining_qty, 0, precision_rounding=rounding) < 0 and self.consumption == 'strict':
                 # '< 0' as it's not possible to click on validate if qty_done < component_remaining_qty
-                raise UserError(_('You should consume the quantity of %s defined in the BoM. If you want to consume more or less components, change the consumption setting on the BoM.') % self.component_id[0].name)
+                # raise UserError(_('You should consume the quantity of %s defined in the BoM. If you want to consume more or less components, change the consumption setting on the BoM.') % self.component_id[0].name)
 
         if self.test_type == 'picture' and not self.picture:
             raise UserError(_('Please upload a picture.'))
