@@ -2,7 +2,7 @@
 {
     'name': "bsqmgmt1_mrp",
     'version': '1.0',
-    'depends': ['mrp_workorder', 'mrp'],
+    'depends': ['mrp', 'mrp_workorder'],
     'author': 'Odoo Inc',
     'maintainer': 'Odoo Inc',
     'category': 'Manufacturing',
