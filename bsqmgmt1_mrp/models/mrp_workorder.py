@@ -35,7 +35,10 @@ class MrpProductionWorkcenterLine(models.Model):
             # Get the move lines associated with our component
             self.component_remaining_qty -= float_round(self.qty_done, precision_rounding=self.workorder_line_id.product_uom_id.rounding or rounding)
             # Write the lot and qty to the move line
-            self.workorder_line_id.write({'lot_id': self.lot_id.id, 'qty_done': float_round(self.qty_done, precision_rounding=self.workorder_line_id.product_uom_id.rounding or rounding)})
+            self.workorder_line_id.write({
+                'lot_id': self.lot_id.id, 
+                'qty_done': float_round(self.qty_done, precision_rounding=self.workorder_line_id.product_uom_id.rounding or rounding)
+            })
 
             if continue_production:
                 self._create_subsequent_checks()
@@ -76,11 +79,12 @@ class MrpProductionWorkcenterLine(models.Model):
             line_without_lot = workorder.finished_workorder_line_ids.filtered(lambda line: line.product_id == workorder.product_id and not line.lot_id)
             quantity_remaining = workorder.qty_remaining + line_without_lot.qty_done
             quantity = line.qty_done + quantity_remaining
+
             if line and float_compare(quantity, final_lot_quantity, precision_rounding=rounding) <= 0:
                 final_lot_quantity = quantity
             elif float_compare(quantity_remaining, final_lot_quantity, precision_rounding=rounding) < 0:
                 final_lot_quantity = quantity_remaining
-
+            
         # final lot line for this lot on this workorder.
         current_lot_lines = self.finished_workorder_line_ids.filtered(lambda line: line.lot_id == self.finished_lot_id)
 
