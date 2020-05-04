@@ -30,5 +30,9 @@ class MrpProduction(models.Model):
     def _compute_source_weight_lbs(self):
         for s in self:
             s.source_weight_lbs = 0.0
-            for f in s.move_raw_ids.filtered(lambda x: x.product_id).filtered(lambda x: x.product_id.type == 'consu'):
+            for f in s.move_raw_ids.filtered(lambda x: x.product_id).filtered(
+                lambda x: x.product_id.type == 'consu' or (
+                    x.product_id.x_studio_material_type and x.product_id.x_studio_material_type == 'Source Material'
+                )
+            ):
                 s.source_weight_lbs += f.quantity_done
