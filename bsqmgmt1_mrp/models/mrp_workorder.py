@@ -12,12 +12,31 @@ class MrpProductionWorkcenterLine(models.Model):
     def action_skip(self):
         self.ensure_one()
         rounding = self.product_uom_id.rounding
-        if float_compare(self.qty_producing, 0, precision_rounding=rounding) <= 0:
+        if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
             raise UserError(_('Please ensure the quantity to produce is nonnegative.'))
         if self.skip_completed_checks:
             self._change_quality_check(increment=1, children=1, checks=self.skipped_check_ids)
         else:
             self._change_quality_check(increment=1, children=1)
+
+    def _onchange_qty_producing(self):
+        """ Modify the qty currently producing will modify the existing
+        workorder line in order to match the new quantity to consume for each
+        component and their reserved quantity.
+        """
+        rounding = self.product_uom_id.rounding
+        if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
+            raise UserError(_('You have to produce at least one %s.') % self.product_uom_id.name)
+        line_values = self._update_workorder_lines()
+        for values in line_values['to_create']:
+            self.env[self._workorder_line_ids()._name].new(values)
+        for line in line_values['to_delete']:
+            if line in self.raw_workorder_line_ids:
+                self.raw_workorder_line_ids -= line
+            else:
+                self.finished_workorder_line_ids -= line
+        for line, vals in line_values['to_update'].items():
+            line.update(vals)
 
     def _next(self, continue_production=False):        
         self.ensure_one()
