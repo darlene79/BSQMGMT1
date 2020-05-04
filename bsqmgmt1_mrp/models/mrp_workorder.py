@@ -41,7 +41,7 @@ class MrpProductionWorkcenterLine(models.Model):
     def _next(self, continue_production=False):        
         self.ensure_one()
         rounding = self.product_uom_id.rounding
-        if float_compare(self.qty_producing, 0, precision_rounding=rounding) <= 0:
+        if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
             raise UserError(_('Please ensure the quantity to produce is nonnegative.'))
         elif self.test_type in ('register_byproducts', 'register_consumed_materials'):
             # Form validation
