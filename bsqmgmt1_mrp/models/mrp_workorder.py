@@ -9,6 +9,12 @@ from odoo.tools import float_compare, float_round
 class MrpProductionWorkcenterLine(models.Model):
     _inherit = 'mrp.workorder'
 
+    @api.depends('qty_produced', 'qty_producing')
+    def _compute_qty_remaining(self):
+        for wo in self:
+            wo.qty_remaining = float_round(wo.qty_producing, precision_rounding=wo.production_id.product_uom_id.rounding)
+            wo.production_id.product_qty = wo.qty_remaining
+
     def action_skip(self):
         self.ensure_one()
         rounding = self.product_uom_id.rounding
