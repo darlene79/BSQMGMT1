@@ -10,15 +10,6 @@ class MrpProduction(models.Model):
     end_weight_lbs = fields.Float(string='End Weight (lbs)', compute='_compute_end_weight_lbs')
     yields = fields.Float(string='Yields', compute='_compute_yields')
 
-    @api.depends('source_weight_lbs', 'end_weight_lbs')
-    def _compute_yields(self):
-        for s in self:
-            if float_compare(s.source_weight_lbs, 0.0, precision_rounding=2) > 0:
-                s.yields = s.end_weight_lbs / s.source_weight_lbs
-            else:
-                s.yields = 0.0
-    
-
     @api.depends('finished_move_line_ids')
     def _compute_end_weight_lbs(self):
         for s in self:
@@ -34,3 +25,11 @@ class MrpProduction(models.Model):
                 lambda x: x.product_id.x_studio_material_type == 'Source Material'
             ):
                 s.source_weight_lbs += f.quantity_done
+
+    @api.depends('source_weight_lbs', 'end_weight_lbs')
+    def _compute_yields(self):
+        for s in self:
+            if float_compare(s.source_weight_lbs, 0, precision_digits=100) > 0:
+                s.yields = (s.end_weight_lbs / s.source_weight_lbs) * 100
+            else:
+                s.yields = 0.0

@@ -25,6 +25,10 @@ class MrpProductionWorkcenterLine(models.Model):
         else:
             self._change_quality_check(increment=1, children=1)
 
+    @api.onchange('qty_done')
+    def _onchange_qty_done(self):
+        self.component_remaining_qty = self.qty_done
+
     @api.onchange('qty_producing')
     def _onchange_qty_producing(self):
         """ Modify the qty currently producing will modify the existing
@@ -35,7 +39,7 @@ class MrpProductionWorkcenterLine(models.Model):
         if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
             raise UserError(_('You have to produce at least one %s.') % self.product_uom_id.name)
         
-        self.qty_remaining = self.qty_producing
+        # self.component_remaining_qty = self.qty_done
         line_values = self._update_workorder_lines()
         for values in line_values['to_create']:
             self.env[self._workorder_line_ids()._name].new(values)
@@ -61,7 +65,7 @@ class MrpProductionWorkcenterLine(models.Model):
             if float_compare(self.qty_done, 0, precision_rounding=rounding) < 0:
                 raise UserError(_('Please enter a positive quantity.'))
             # Get the move lines associated with our component
-            self.component_remaining_qty -= float_round(self.qty_done, precision_rounding=self.workorder_line_id.product_uom_id.rounding or rounding)
+            # self.component_remaining_qty -= float_round(self.qty_done, precision_rounding=self.workorder_line_id.product_uom_id.rounding or rounding)
             # Write the lot and qty to the move line
             self.workorder_line_id.write({
                 'lot_id': self.lot_id.id, 
