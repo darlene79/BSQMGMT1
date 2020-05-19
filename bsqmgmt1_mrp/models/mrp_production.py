@@ -6,6 +6,7 @@ from odoo.tools import float_compare, float_round
 class MrpProduction(models.Model):
     _inherit = 'mrp.production'
 
+    source_calculated = fields.Boolean(string='Source weight has been calculated')
     source_weight_lbs = fields.Float(string='Source Weight (lbs)', compute='_compute_source_weight_lbs')
     end_weight_lbs = fields.Float(string='End Weight (lbs)', compute='_compute_end_weight_lbs')
     yields = fields.Float(string='Yields', compute='_compute_yields')
@@ -20,11 +21,13 @@ class MrpProduction(models.Model):
     @api.depends('move_raw_ids')
     def _compute_source_weight_lbs(self):
         for s in self:
-            s.source_weight_lbs = 0.0
-            for f in s.move_raw_ids.filtered(lambda x: x.product_id).filtered(lambda x: x.product_id.x_studio_material_type).filtered(
-                lambda x: x.product_id.x_studio_material_type == 'Source Material'
-            ):
-                s.source_weight_lbs += f.quantity_done
+            if not s.source_calculated:
+                s.source_weight_lbs = 0.0
+                for f in s.move_raw_ids.filtered(lambda x: x.product_id).filtered(lambda x: x.product_id.x_studio_material_type).filtered(
+                    lambda x: x.product_id.x_studio_material_type == 'Source Material'
+                ):
+                    s.source_weight_lbs += f.quantity_done
+                    s.source_calculated = True
 
     @api.depends('source_weight_lbs', 'end_weight_lbs')
     def _compute_yields(self):
