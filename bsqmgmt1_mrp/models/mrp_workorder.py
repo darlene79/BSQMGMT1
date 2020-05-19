@@ -49,11 +49,11 @@ class MrpProductionWorkcenterLine(models.Model):
                 self.finished_workorder_line_ids -= line
         for line, vals in line_values['to_update'].items():
             line.update(vals)
-            
-        self.component_remaining_qty = self.qty_done
 
     def _next(self, continue_production=False):        
         self.ensure_one()
+        self.component_remaining_qty = self.qty_done
+        
         rounding = self.product_uom_id.rounding
         if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
             raise UserError(_('Please ensure the quantity to produce is nonnegative.'))
@@ -98,6 +98,8 @@ class MrpProductionWorkcenterLine(models.Model):
         2. Save final lot and quantity producing to suggest on next workorder
         """
         self.ensure_one()
+        self.component_remaining_qty = self.qty_done
+
         final_lot_quantity = self.qty_production
         rounding = self.product_uom_id.rounding
         # Get the max quantity possible for current lot in other workorders
@@ -143,6 +145,8 @@ class MrpProductionWorkcenterLine(models.Model):
 
         self.ensure_one()
         self._check_company()
+        self.component_remaining_qty = self.qty_done
+
         if float_compare(self.qty_producing, 0, precision_rounding=self.product_uom_id.rounding) < 0:
             raise UserError(_('Please set the quantity you are currently producing. It should be different from zero.'))
 
