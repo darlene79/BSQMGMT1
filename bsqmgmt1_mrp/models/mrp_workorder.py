@@ -6,10 +6,8 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, float_round
 
-class MrpProductionWorkcenterLine(models.Model):
+class MrpWorkorder(models.Model):
     _inherit = 'mrp.workorder'
-
-    qty_done = fields.Float(related=False, readonly=False)
 
     @api.depends('qty_produced', 'qty_producing')
     def _compute_qty_remaining(self):
@@ -29,7 +27,30 @@ class MrpProductionWorkcenterLine(models.Model):
 
     @api.onchange('qty_done')
     def _onchange_qty_done(self):
-        self.component_remaining_qty = self.qty_done
+        print(self.current_quality_check_id.qty_done)
+        self.current_quality_check_id.qty_done = self.qty_done
+        print(self.current_quality_check_id.qty_done)
+    
+    @api.depends('state', 'quality_state', 'current_quality_check_id', 'qty_producing',
+                 'component_tracking', 'test_type', 'component_id',
+                 'move_finished_ids.state', 'move_finished_ids.product_id',
+                 'move_raw_ids.state', 'move_raw_ids.product_id',
+                 )
+    def _compute_component_data(self):
+        self.component_remaining_qty = False
+        self.component_uom_id = False
+        for wo in self.filtered(lambda w: w.state not in ('done', 'cancel')):
+            if wo.test_type in ('register_byproducts', 'register_consumed_materials') and wo.quality_state == 'none':
+                wol = wo.current_quality_check_id.workorder_line_id
+                move = wol.move_id
+
+                lines = wo._workorder_line_ids().filtered(lambda l: l.move_id == move)
+
+                print(wo.component_remaining_qty, wol.qty_to_consume)
+                wo.component_remaining_qty = self._prepare_component_quantity(move, wol.qty_to_consume)
+                print(wo.component_remaining_qty, wol.qty_to_consume)
+                
+                wo.component_uom_id = lines[:1].product_uom_id
 
     @api.onchange('qty_producing')
     def _onchange_qty_producing(self):
@@ -41,7 +62,6 @@ class MrpProductionWorkcenterLine(models.Model):
         if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
             raise UserError(_('You have to produce at least one %s.') % self.product_uom_id.name)
         
-        # self.qty_done = self.qty_producing
         line_values = self._update_workorder_lines()
         for values in line_values['to_create']:
             self.env[self._workorder_line_ids()._name].new(values)
@@ -55,6 +75,7 @@ class MrpProductionWorkcenterLine(models.Model):
 
     def _next(self, continue_production=False):        
         self.ensure_one()
+
         rounding = self.product_uom_id.rounding
         if float_compare(self.qty_producing, 0, precision_rounding=rounding) < 0:
             raise UserError(_('Please ensure the quantity to produce is nonnegative.'))
@@ -99,6 +120,7 @@ class MrpProductionWorkcenterLine(models.Model):
         2. Save final lot and quantity producing to suggest on next workorder
         """
         self.ensure_one()
+
         final_lot_quantity = self.qty_production
         rounding = self.product_uom_id.rounding
         # Get the max quantity possible for current lot in other workorders
@@ -144,6 +166,7 @@ class MrpProductionWorkcenterLine(models.Model):
 
         self.ensure_one()
         self._check_company()
+
         if float_compare(self.qty_producing, 0, precision_rounding=self.product_uom_id.rounding) < 0:
             raise UserError(_('Please set the quantity you are currently producing. It should be different from zero.'))
 
