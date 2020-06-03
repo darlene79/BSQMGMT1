@@ -9,6 +9,23 @@ from odoo.tools import float_compare, float_round
 class MrpWorkorder(models.Model):
     _inherit = 'mrp.workorder'
 
+    @api.onchange('finished_lot_id')
+    def _onchange_finished_lot_id(self):
+        """When the user changes the lot being currently produced, suggest
+        a quantity to produce consistent with the previous workorders. """
+        print()
+        print('_onchange_finished_lot_id')
+        previous_wo = self.env['mrp.workorder'].search([
+            ('next_work_order_id', '=', self.id)
+        ])
+        if previous_wo:
+            line = previous_wo.finished_workorder_line_ids.filtered(lambda line: line.product_id == self.product_id and line.lot_id == self.finished_lot_id)
+            if line:
+                print(self.qty_producing, line.qty_done)
+                # self.qty_producing = line.qty_done
+                # print(self.qty_producing, line.qty_done)
+            print()
+
     @api.depends('qty_produced', 'qty_producing')
     def _compute_qty_remaining(self):
         for wo in self:
@@ -27,9 +44,12 @@ class MrpWorkorder(models.Model):
 
     @api.onchange('qty_done')
     def _onchange_qty_done(self):
+        print()
+        print('_onchange_qty_done:')
         print(self.current_quality_check_id.qty_done)
         self.current_quality_check_id.qty_done = self.qty_done
         print(self.current_quality_check_id.qty_done)
+        print()
     
     @api.depends('state', 'quality_state', 'current_quality_check_id', 'qty_producing',
                  'component_tracking', 'test_type', 'component_id',
@@ -39,6 +59,7 @@ class MrpWorkorder(models.Model):
     def _compute_component_data(self):
         self.component_remaining_qty = False
         self.component_uom_id = False
+        print('_compute_component_data:')
         for wo in self.filtered(lambda w: w.state not in ('done', 'cancel')):
             if wo.test_type in ('register_byproducts', 'register_consumed_materials') and wo.quality_state == 'none':
                 wol = wo.current_quality_check_id.workorder_line_id
@@ -51,7 +72,8 @@ class MrpWorkorder(models.Model):
                 print(wo.component_remaining_qty, wol.qty_to_consume)
                 
                 wo.component_uom_id = lines[:1].product_uom_id
-
+        print()
+        
     @api.onchange('qty_producing')
     def _onchange_qty_producing(self):
         """ Modify the qty currently producing will modify the existing
