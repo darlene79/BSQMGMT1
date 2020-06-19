@@ -8,23 +8,19 @@ from odoo.tools import float_compare, float_round
 
 class MrpWorkorder(models.Model):
     _inherit = 'mrp.workorder'
+    prev_qty_produced = {'len': 0}
 
     @api.onchange('finished_lot_id')
     def _onchange_finished_lot_id(self):
         """When the user changes the lot being currently produced, suggest
         a quantity to produce consistent with the previous workorders. """
-        print()
-        print('_onchange_finished_lot_id')
         previous_wo = self.env['mrp.workorder'].search([
             ('next_work_order_id', '=', self.id)
         ])
         if previous_wo:
             line = previous_wo.finished_workorder_line_ids.filtered(lambda line: line.product_id == self.product_id and line.lot_id == self.finished_lot_id)
             if line:
-                print(self.qty_producing, line.qty_done)
-                # self.qty_producing = line.qty_done
-                # print(self.qty_producing, line.qty_done)
-            print()
+                self.qty_producing = line.qty_done
 
     @api.depends('qty_produced', 'qty_producing')
     def _compute_qty_remaining(self):
@@ -42,14 +38,16 @@ class MrpWorkorder(models.Model):
         else:
             self._change_quality_check(increment=1, children=1)
 
+    def action_generate_serial(self):
+        self.ensure_one()
+        self.finished_lot_id = self.env['stock.production.lot'].create({
+            'product_id': self.product_id.id,
+            'company_id': self.company_id.id,
+        })
+
     @api.onchange('qty_done')
     def _onchange_qty_done(self):
-        print()
-        print('_onchange_qty_done:')
-        print(self.current_quality_check_id.qty_done)
         self.current_quality_check_id.qty_done = self.qty_done
-        print(self.current_quality_check_id.qty_done)
-        print()
     
     @api.depends('state', 'quality_state', 'current_quality_check_id', 'qty_producing',
                  'component_tracking', 'test_type', 'component_id',
@@ -59,20 +57,24 @@ class MrpWorkorder(models.Model):
     def _compute_component_data(self):
         self.component_remaining_qty = False
         self.component_uom_id = False
-        print('_compute_component_data:')
+        
+        count = len(self.filtered(lambda w: w.state not in ('done', 'cancel')))
         for wo in self.filtered(lambda w: w.state not in ('done', 'cancel')):
             if wo.test_type in ('register_byproducts', 'register_consumed_materials') and wo.quality_state == 'none':
                 wol = wo.current_quality_check_id.workorder_line_id
                 move = wol.move_id
 
                 lines = wo._workorder_line_ids().filtered(lambda l: l.move_id == move)
+                
+                if self.prev_qty_produced['len'] != count:
+                    self.prev_qty_produced[wol.id] = wol.qty_to_consume
+                    self.prev_qty_produced['len'] += 1
+                else:
+                    wol.qty_to_consume = self.prev_qty_produced[wol.id]
 
-                print(wo.component_remaining_qty, wol.qty_to_consume)
                 wo.component_remaining_qty = self._prepare_component_quantity(move, wol.qty_to_consume)
-                print(wo.component_remaining_qty, wol.qty_to_consume)
                 
                 wo.component_uom_id = lines[:1].product_uom_id
-        print()
         
     @api.onchange('qty_producing')
     def _onchange_qty_producing(self):
