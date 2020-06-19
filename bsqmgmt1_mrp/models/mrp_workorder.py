@@ -58,7 +58,9 @@ class MrpWorkorder(models.Model):
         self.component_remaining_qty = False
         self.component_uom_id = False
         
+        # print()
         count = len(self.filtered(lambda w: w.state not in ('done', 'cancel')))
+        # print('_compute_component_date:', count)
         for wo in self.filtered(lambda w: w.state not in ('done', 'cancel')):
             if wo.test_type in ('register_byproducts', 'register_consumed_materials') and wo.quality_state == 'none':
                 wol = wo.current_quality_check_id.workorder_line_id
@@ -72,9 +74,10 @@ class MrpWorkorder(models.Model):
                 else:
                     wol.qty_to_consume = self.prev_qty_produced[wol.id]
 
+                # print(wol.id, wol.qty_to_consume, self.prev_qty_produced)
                 wo.component_remaining_qty = self._prepare_component_quantity(move, wol.qty_to_consume)
-                
                 wo.component_uom_id = lines[:1].product_uom_id
+        # print()
         
     @api.onchange('qty_producing')
     def _onchange_qty_producing(self):
