@@ -58,6 +58,9 @@ class MrpWorkorder(models.Model):
         self.component_remaining_qty = False
         self.component_uom_id = False
         
+        if not 'prev_qty_produced' in self:
+            self.prev_qty_produced = {'len': 0}
+            
         # print()
         count = len(self.filtered(lambda w: w.state not in ('done', 'cancel')))
         # print('_compute_component_date:', count)
