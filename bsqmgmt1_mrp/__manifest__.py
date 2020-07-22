@@ -18,6 +18,7 @@ Dynamic Finished Product Quantity
     - The field x_studio_yields should be the division between both fields (x_studio_end_weight_lbs / x_studio_source_weight_lbs)
 """,
     'data': [
-        'views/views.xml',
+        'views/product_views.xml',
+        'views/mrp_workorder_views.xml'
     ]
 }
