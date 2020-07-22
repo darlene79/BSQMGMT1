@@ -10,6 +10,34 @@ class MrpWorkorder(models.Model):
     _inherit = 'mrp.workorder'
     prev_qty_produced = {'len': 0}
 
+    initial_qty_remaining = fields.Float(compute='_compute_initial_qty', digits='Product Unit of Measure', stored=True)
+    initial_component_remaining_qty = fields.Float(compute='_compute_initial_qty', digits='Product Unit of Measure', stored=True)
+
+    def _compute_initial_qty(self):
+        for wo in self:
+            if wo.initial_component_remaining_qty and wo.initial_qty_remaining and self.env.context.get('tablet_view', False):
+                pass
+            else:
+                wo.initial_component_remaining_qty = wo.component_remaining_qty
+                wo.initial_qty_remaining = wo.qty_remaining
+
+    def open_tablet_view(self):
+        self.ensure_one()
+        if not self.is_user_working and self.working_state != 'blocked' and self.state in ('ready', 'progress'):
+            self.button_start()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'mrp.workorder',
+            'views': [[self.env.ref('mrp_workorder.mrp_workorder_view_form_tablet').id, 'form']],
+            'res_id': self.id,
+            'target': 'fullscreen',
+            'flags': {
+                'withControlPanel': False,
+                'form_view_initial_mode': 'edit',
+            },
+            'context': {'tablet_view': True}
+        }
+
     @api.onchange('finished_lot_id')
     def _onchange_finished_lot_id(self):
         """When the user changes the lot being currently produced, suggest
