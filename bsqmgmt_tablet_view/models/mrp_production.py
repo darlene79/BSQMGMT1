@@ -15,7 +15,7 @@ class MrpProduction(models.Model):
     def _compute_source_weight_lbs(self):
         for wo in self:
             wo.source_weight_lbs = 0.0
-            for line in wo.move_raw_ids.filtered(lambda x: x.product_id.material_type == 'source'):
+            for line in wo.move_raw_ids.filtered(lambda x: x.product_id.x_studio_material_type == 'source'):
                 wo.source_weight_lbs += line.quantity_done
 
     @api.depends('finished_move_line_ids')

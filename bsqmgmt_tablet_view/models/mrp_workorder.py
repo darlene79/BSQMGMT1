@@ -194,3 +194,23 @@ class MrpWorkorder(models.Model):
             else:
                 wo.initial_component_remaining_qty = wo.component_remaining_qty
                 wo.initial_qty_remaining = wo.qty_remaining
+
+class MrpProductionWorkcenterLine(models.Model):
+    _inherit = 'mrp.workorder'
+
+    @api.onchange('qty_producing')
+    def _onchange_qty_producing(self):
+        if not self.env.context.get('tablet_view', False):
+            if self.qty_producing <= 0:
+                raise UserError(
+                    _('You have to produce at least one %s.') % self.product_uom_id.name)
+            line_values = self._update_workorder_lines()
+            for values in line_values['to_create']:
+                self.env[self._workorder_line_ids()._name].new(values)
+            for line in line_values['to_delete']:
+                if line in self.raw_workorder_line_ids:
+                    self.raw_workorder_line_ids -= line
+                else:
+                    self.finished_workorder_line_ids -= line
+            for line, vals in line_values['to_update'].items():
+                line.update(vals)
