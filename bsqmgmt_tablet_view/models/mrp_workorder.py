@@ -5,9 +5,9 @@ from datetime import datetime
 from odoo.tools import float_compare, float_round
 from odoo.exceptions import UserError, ValidationError
 from odoo import models, fields, api, _
+import pudb
 
-
-class MrpWorkorder(models.Model):
+class MrpProductionWorkcenterLine(models.Model):
     _inherit = 'mrp.workorder'
 
     initial_qty_remaining = fields.Float(compute='_compute_initial_qty', digits='Product Unit of Measure', stored=True)
