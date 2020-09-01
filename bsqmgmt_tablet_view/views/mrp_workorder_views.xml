@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="ir.ui.view" id="mrp_workorder_view_form_tablet_inherit_bsqmgmt">
+        <field name="name">mrp.workorder.view.form.inherit.quality.tablet.new.inherit</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp_workorder.mrp_workorder_view_form_tablet"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qty_producing']" position="replace">
+                <field name="qty_producing" class="oe_inline text-left" required="1"/>
+            </xpath>
+            <xpath expr="//field[@name='qty_remaining']" position="replace">
+                <field name="initial_qty_remaining"/>
+            </xpath>
+            <xpath expr="//field[@name='component_remaining_qty']" position="replace">
+                <field name="initial_component_remaining_qty"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
