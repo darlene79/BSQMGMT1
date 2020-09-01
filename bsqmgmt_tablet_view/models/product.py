@@ -9,3 +9,10 @@ class ProductTemplate(models.Model):
     material_type = fields.Selection([
         ('source', 'Source Material'),
         ('inventory', 'Inventory')], string='Material Type')
+
+class ProductProduct(models.Model):
+    _inherit = 'product.product'
+
+    material_type = fields.Selection([
+        ('source', 'Source Material'),
+        ('inventory', 'Inventory')], string='Material Type')
