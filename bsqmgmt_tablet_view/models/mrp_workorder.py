@@ -5,7 +5,7 @@ from datetime import datetime
 from odoo.tools import float_compare, float_round
 from odoo.exceptions import UserError, ValidationError
 from odoo import models, fields, api, _
-import pudb
+
 
 class MrpProductionWorkcenterLine(models.Model):
     _inherit = 'mrp.workorder'
@@ -157,6 +157,14 @@ class MrpProductionWorkcenterLine(models.Model):
         self._start_nextworkorder()
 
         # Test if the production is done
+        """
+        getting stuck here
+        product_qty on production_id not updated in multi-step routing
+        need qty_produced
+        float_compare -1 if qty_produced < production_id.product_qty
+        qty_produced needs to be larger than production_id.product_qty
+
+        """
         rounding = self.production_id.product_uom_id.rounding
         if float_compare(self.qty_produced, self.production_id.product_qty, precision_rounding=rounding) < 0:
             previous_wo = self.env['mrp.workorder']
@@ -185,7 +193,8 @@ class MrpProductionWorkcenterLine(models.Model):
         """modify workorder product_qty if qty_remaining changes"""
         for wo in self:
             wo.qty_remaining = float_round(wo.qty_producing, precision_rounding=wo.production_id.product_uom_id.rounding)
-            wo.production_id.product_qty = wo.qty_remaining
+            if wo.qty_remaining > 0:
+                wo.production_id.product_qty = wo.qty_remaining
 
     def _compute_initial_qty(self):
         for wo in self:
@@ -214,3 +223,26 @@ class MrpProductionWorkcenterLine(models.Model):
                     self.finished_workorder_line_ids -= line
             for line, vals in line_values['to_update'].items():
                 line.update(vals)
+
+
+
+'''
+{'id': 233, 
+'name': 'Work Orders', 
+'type': 'ir.actions.act_window', 
+'view_id': False, 
+'domain': [('state', 'not in', ['done', 'cancel', 'pending'])], 
+'context': {'search_default_production_id': 5}, 
+'res_id': 0, 'res_model': 'mrp.workorder', 
+'target': 'main', 
+'view_mode': 'tree,form,gantt,calendar,pivot,graph', 
+'usage': False, 
+'view_ids': [], 
+'views': [(False, 'tree'), (False, 'form'), (False, 'gantt'), (False, 'calendar'), (False, 'pivot'), (False, 'graph')], 
+'limit': 80, 
+'groups_id': [], 
+'search_view_id': False, 
+'filter': False, 
+'search_view': '{\'model\': \'mrp.workorder\', \'field_parent\': False, \'arch\': \'<search>\\n                <field name="production_id" can_create="true" can_write="true" modifiers="{&quot;required&quot;: true}"/>\\n                <field name="workcenter_id" can_create="true" can_write="true" modifiers="{&quot;readonly&quot;: [[&quot;state&quot;, &quot;in&quot;, [&quot;done&quot;, &quot;cancel&quot;]]], &quot;required&quot;: true}"/>\\n                <filter string="Ready" name="ready" domain="[(\\\'state\\\',\\\'=\\\',\\\'ready\\\')]"/>\\n                <filter string="Pending" name="pending" domain="[(\\\'state\\\',\\\'=\\\',\\\'pending\\\')]"/>\\n                <filter string="In Progress" name="progress" domain="[(\\\'state\\\',\\\'=\\\',\\\'progress\\\')]"/>\\n                <filter string="Done" name="done" domain="[(\\\'state\\\',\\\'=\\\', \\\'done\\\')]"/>\\n                <filter string="Late" name="late" domain="[(\\\'date_planned_start\\\',\\\'&lt;=\\\',time.strftime(\\\'%Y-%m-%d\\\'))]"/>\\n                <separator/>\\n                <filter string="Start Date" name="date_start_filter" date="date_start"/>\\n                <filter invisible="1" string="Late Activities" name="activities_overdue" domain="[(\\\'activity_ids.date_deadline\\\', \\\'&lt;\\\', context_today().strftime(\\\'%Y-%m-%d\\\'))]" help="Show all records which has next action date is before today" modifiers="{&quot;invisible&quot;: true}"/>\\n                <filter invisible="1" string="Today Activities" name="activities_today" domain="[(\\\'activity_ids.date_deadline\\\', \\\'=\\\', context_today().strftime(\\\'%Y-%m-%d\\\'))]" modifiers="{&quot;invisible&quot;: true}"/>\\n                <filter invisible="1" string="Future Activities" name="activities_upcoming_all" domain="[(\\\'activity_ids.date_deadline\\\', \\\'&gt;\\\', context_today().strftime(\\\'%Y-%m-%d\\\'))]" modifiers="{&quot;invisible&quot;: true}"/>\\n            </search>\', \'name\': \'mrp.production.work.order.search\', \'type\': \'search\', \'view_id\': 645, \'base_model\': \'mrp.workorder\', \'fields\': {\'workcenter_id\': {\'type\': \'many2one\', \'change_default\': False, \'company_dependent\': False, \'context\': {}, \'depends\': (), \'domain\': "[(\'company_id\', \'in\', [company_id, False])]", \'manual\': False, \'readonly\': False, \'relation\': \'mrp.workcenter\', \'required\': True, \'searchable\': True, \'sortable\': True, \'states\': {\'done\': [(\'readonly\', True)], \'cancel\': [(\'readonly\', True)]}, \'store\': True, \'string\': \'Work Center\', \'views\': {}}, \'production_id\': {\'type\': \'many2one\', \'change_default\': False, \'company_dependent\': False, \'context\': {}, \'depends\': (), \'domain\': "[(\'company_id\', \'in\', [company_id, False])]", \'manual\': False, \'readonly\': False, \'relation\': \'mrp.production\', \'required\': True, \'searchable\': True, \'sortable\': True, \'store\': True, \'string\': \'Manufacturing Order\', \'views\': {}}}}',
+                                                                                                  'xml_id': 'mrp.action_mrp_workorder_production_specific', 'help': '<p class="o_view_nocontent_smiling_face">\n            Start a new work order\n          </p><p>\n            Work Orders are operations to be processed at a Work Center to realize a\n            Manufacturing Order. Work Orders are trigerred by Manufacturing Orders,\n            they are based on the Routing defined on these ones\n            </p>\n        ', 'binding_model_id': False, 'binding_type': 'action', 'binding_view_types': 'list,form', 'display_name': 'Work Orders', 'create_uid': (1, 'System'), 'create_date': datetime.datetime(2021, 2, 9, 23, 24, 55, 605389), 'write_uid': (1, 'System'), 'write_date': datetime.datetime(2021, 2, 9, 23, 24, 55, 605389), '__last_update': datetime.datetime(2021, 2, 9, 23, 24, 55, 605389)}
+'''
